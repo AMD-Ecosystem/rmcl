@@ -12,8 +12,7 @@
 
 #include <rmagine/types/MemoryCuda.hpp>
 
-#include <curand.h>
-#include <curand_kernel.h>
+#include <rmcl_ros/util/cuda_to_hip.h>
 
 namespace rmcl
 {

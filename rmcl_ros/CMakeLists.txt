@@ -66,6 +66,11 @@ find_package(rmagine 2.4
 find_package(rmcl 2.4 REQUIRED)
 include_directories(${rmcl_INCLUDE_DIR})
 
+# Compile the GPU sources for AMD GPUs with the ROCm/HIP toolchain instead of
+# CUDA. Defaults to whatever rmagine's cuda component was built with, so a
+# workspace that found a ROCm rmagine does not have to repeat the flag.
+option(USE_HIP "Compile the GPU code with ROCm/HIP" ${rmagine_cuda_USE_HIP})
+
 # TODO: we can do this better. maybe put definitions to each target?
 if(TARGET rmcl-embree)
     add_definitions(-DRMCL_EMBREE)
@@ -172,9 +177,15 @@ if(RMCL_CUDA)
 
     set(RMCL_OPTIX_DOWNLOAD_VERSION "9.0.0" CACHE STRING "Desired optix version used for download.")
 
+    if(USE_HIP)
+        find_package(hip REQUIRED)
+        find_package(hiprand REQUIRED)
+        enable_language(HIP)
+    endif(USE_HIP)
+
     include(CheckLanguage)
     check_language(CUDA)
-    if(CMAKE_CUDA_COMPILER)
+    if(CMAKE_CUDA_COMPILER AND NOT USE_HIP)
         find_package(CUDAToolkit QUIET)
         if(CUDAToolkit_FOUND)
             enable_language(CUDA)
@@ -198,7 +209,7 @@ if(RMCL_CUDA)
                 message(STATUS "Neither CudaToolkit nor CUDA found!")
             endif(CUDA_FOUND)
         endif(CUDAToolkit_FOUND)
-    endif(CMAKE_CUDA_COMPILER) # -> CUDA_FOUND
+    endif(CMAKE_CUDA_COMPILER AND NOT USE_HIP) # -> CUDA_FOUND
 
     add_library(rmcl_ros_cuda SHARED
         # MICP-L
@@ -212,6 +223,22 @@ if(RMCL_CUDA)
         src/rmcl/resampling.cu
         src/rmcl/GladiatorResamplerGPU.cpp
     )
+
+    if(USE_HIP)
+        set_source_files_properties(
+            src/rmcl/particle_motion.cu
+            src/rmcl/resampling.cu
+            PROPERTIES LANGUAGE HIP
+        )
+        # USE_HIP is public: the installed headers switch to the hip spellings
+        # of curandState and friends with it.
+        target_compile_definitions(rmcl_ros_cuda PUBLIC USE_HIP)
+        # The HIP language handles the device compilation of the two .cu files,
+        # so hip::device (which would put --offload-arch on the plain C++ ones
+        # in this target as well) is deliberately not linked here. The C++
+        # sources only need the HIP and hipRAND headers and the host runtime.
+        target_link_libraries(rmcl_ros_cuda PUBLIC hip::host hip::hiprand)
+    endif(USE_HIP)
 
     target_include_directories(rmcl_ros_cuda PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -784,5 +811,10 @@ ament_export_dependencies(rclcpp
   image_transport
   visualization_msgs
   std_srvs)
+
+if(BUILD_TESTING AND RMCL_CUDA)
+    # needs a GPU at test time, so it is only built where the GPU code is
+    add_subdirectory(tests)
+endif()
 
 ament_package()

@@ -117,6 +117,14 @@ Clone this repository into your ROS workspace and build it.
 colcon build
 ```
 
+On AMD GPUs the GPU code is compiled with ROCm/HIP instead of CUDA. Build Rmagine with `-DUSE_HIP=ON` first, then build this workspace against it:
+
+```console
+colcon build --cmake-args -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx942
+```
+
+Set `CMAKE_HIP_ARCHITECTURES` to the target GPU (`rocminfo | grep gfx`). `USE_HIP` defaults to whatever Rmagine's `cuda` component was built with, so it can usually be left out. Ray casting on the GPU still requires OptiX, so on AMD the correspondence search runs on the CPU (Embree).
+
 ### Distro Compatibility
 
 | Distro | OS | Architecture | Build | Tests |

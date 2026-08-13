@@ -1,9 +1,8 @@
 #include "rmcl_ros/rmcl/resampling.cuh"
-#include <cuda_runtime.h>
+#include <rmcl_ros/util/cuda_to_hip.h>
 
+#include <climits>
 #include <iostream>
-
-#include <curand.h>
 
 namespace rm = rmagine;
 

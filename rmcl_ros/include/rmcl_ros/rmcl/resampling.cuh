@@ -14,8 +14,7 @@
 
 #include "Resampler.hpp"
 
-#include <curand_kernel.h>
-#include <curand.h>
+#include <rmcl_ros/util/cuda_to_hip.h>
 
 
 namespace rmcl
@@ -25,8 +24,11 @@ void init_curand(rmagine::MemoryView<curandState, rmagine::VRAM_CUDA>& curand_st
 
 struct SimpleLikelihoodStats
 {
-  float sum = 0.0;
-  float max = -1.0;
+  // No default member initializers here: the reduction kernel declares a
+  // __shared__ array of this type, and a shared variable cannot be
+  // initialized. Both members are written before they are read.
+  float sum;
+  float max;
 };
 
 void compute_stats(

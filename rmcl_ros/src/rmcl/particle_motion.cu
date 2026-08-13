@@ -1,5 +1,5 @@
 #include "rmcl_ros/rmcl/particle_motion.cuh"
-#include <cuda_runtime.h>
+#include <rmcl_ros/util/cuda_to_hip.h>
 
 #include <iostream>
 
