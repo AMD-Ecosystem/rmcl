@@ -31,6 +31,9 @@
 #define curand          hiprand
 #define curand_normal   hiprand_normal
 
+#define cudaSuccess          hipSuccess
+#define cudaGetDeviceCount   hipGetDeviceCount
+
 #else // CUDA
 
 #include <cuda_runtime.h>

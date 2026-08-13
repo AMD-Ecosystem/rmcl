@@ -230,8 +230,9 @@ if(RMCL_CUDA)
             src/rmcl/resampling.cu
             PROPERTIES LANGUAGE HIP
         )
-        # USE_HIP is public: the installed headers switch to the hip spellings
-        # of curandState and friends with it.
+        # USE_HIP is public because the headers of this target switch to the hip
+        # spellings of curandState and friends with it, and other targets in the
+        # workspace include them: the GPU test and rmcl_localization.
         target_compile_definitions(rmcl_ros_cuda PUBLIC USE_HIP)
         # The HIP language handles the device compilation of the two .cu files,
         # so hip::device (which would put --offload-arch on the plain C++ ones
@@ -813,7 +814,8 @@ ament_export_dependencies(rclcpp
   std_srvs)
 
 if(BUILD_TESTING AND RMCL_CUDA)
-    # needs a GPU at test time, so it is only built where the GPU code is
+    # exercises the GPU library, so it is only built where that library is.
+    # The test itself skips when no device can be reached.
     add_subdirectory(tests)
 endif()
 
